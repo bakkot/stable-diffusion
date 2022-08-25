@@ -75,6 +75,32 @@ from ldm.models.diffusion.ddim     import DDIMSampler
 from ldm.models.diffusion.plms     import PLMSSampler
 from ldm.models.diffusion.ksampler import KSampler
 
+def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
+    """ helper function to spherically interpolate two arrays v1 v2 """
+
+    if not isinstance(v0, np.ndarray):
+        inputs_are_torch = True
+        input_device = v0.device
+        v0 = v0.cpu().numpy()
+        v1 = v1.cpu().numpy()
+
+    dot = np.sum(v0 * v1 / (np.linalg.norm(v0) * np.linalg.norm(v1)))
+    if np.abs(dot) > DOT_THRESHOLD:
+        v2 = (1 - t) * v0 + t * v1
+    else:
+        theta_0 = np.arccos(dot)
+        sin_theta_0 = np.sin(theta_0)
+        theta_t = theta_0 * t
+        sin_theta_t = np.sin(theta_t)
+        s0 = np.sin(theta_0 - theta_t) / sin_theta_0
+        s1 = sin_theta_t / sin_theta_0
+        v2 = s0 * v0 + s1 * v1
+
+    if inputs_are_torch:
+        v2 = torch.from_numpy(v2).to(input_device)
+
+    return v2
+
 class T2I:
     """T2I class
     Attributes
@@ -493,7 +519,7 @@ The vast majority of these arguments default to reasonable values.
                 # e.g. for 1 iteration, we want to generate only the midpoint i.e. 1/2
                 # for 2 iterations we want to generate 1/3 and 2/3
                 # etc
-                t_enc = int((n + 1)/(iterations + 1) * steps)
+                t = int((n + 1)/(iterations + 1) * steps)
 
                 seed_everything(seed)
                 for prompts in tqdm(data, desc="data", dynamic_ncols=True):
@@ -524,7 +550,7 @@ The vast majority of these arguments default to reasonable values.
                     # # decode it
                     # samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                     #                             unconditional_conditioning=uc,)
-                    samples = init_latent_1
+                    samples = slerp(t, init_latent_1, init_latent_2)
 
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
