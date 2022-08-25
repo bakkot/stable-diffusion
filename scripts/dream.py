@@ -47,7 +47,7 @@ def main():
     # when the frozen CLIP tokenizer is imported
     import transformers
     transformers.logging.set_verbosity_error()
-    
+
     # creating a simple text2image object with a handful of
     # defaults passed on the command line.
     # additional parameters will be added (or overriden) during
@@ -68,7 +68,7 @@ def main():
     # make sure the output directory exists
     if not os.path.exists(opt.outdir):
         os.makedirs(opt.outdir)
-        
+
     # gets rid of annoying messages about random seed
     logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
 
@@ -96,10 +96,10 @@ def main():
 def main_loop(t2i,parser,log,infile):
     ''' prompt/read/execute loop '''
     done = False
-    
+
     while not done:
         try:
-            command = infile.readline() if infile else input("dream> ") 
+            command = infile.readline() if infile else input("dream> ")
         except EOFError:
             done = True
             break
@@ -120,7 +120,7 @@ def main_loop(t2i,parser,log,infile):
         except ValueError as e:
             print(str(e))
             continue
-        
+
         if len(elements)==0:
             continue
 
@@ -139,10 +139,10 @@ def main_loop(t2i,parser,log,infile):
         if elements[0]=='pwd':
             print(f"current output directory is {t2i.outdir}")
             continue
-        
+
         if elements[0].startswith('!dream'): # in case a stored prompt still contains the !dream command
             elements.pop(0)
-            
+
         # rearrange the arguments to mimic how it works in the Dream bot.
         switches = ['']
         switches_started = False
@@ -199,12 +199,12 @@ def main_loop(t2i,parser,log,infile):
 
         print("Outputs:")
         write_log_message(t2i,opt,results,log)
-            
+
         if allVariantResults:
             print("Variant outputs:")
             for vr in allVariantResults:
                 write_log_message(t2i,vr[0],vr[1],log)
-            
+
 
     print("goodbye!")
 
@@ -276,7 +276,7 @@ def _write_prompt_to_png(path,prompt):
     info.add_text("Dream",prompt)
     im = Image.open(path)
     im.save(path,"PNG",pnginfo=info)
-    
+
 def create_argv_parser():
     parser = argparse.ArgumentParser(description="Parse script's command line args")
     parser.add_argument("--laion400m",
@@ -320,8 +320,8 @@ def create_argv_parser():
                         default="cuda",
                         help="device to run stable diffusion on. defaults to cuda `torch.cuda.current_device()` if avalible")
     return parser
-                        
-    
+
+
 def create_cmd_parser():
     parser = argparse.ArgumentParser(description='Example: dream> a fantastic alien landscape -W1024 -H960 -s100 -n12')
     parser.add_argument('prompt')
@@ -366,7 +366,7 @@ if readline_available:
 
         def complete(self,text,state):
             buffer = readline.get_line_buffer()
-            
+
             if text.startswith(('-I','--init_img')):
                 return self._path_completions(text,state,('.png'))
 
@@ -377,7 +377,7 @@ if readline_available:
             if state == 0:
                 # This is the first time for this text, so build a match list.
                 if text:
-                    self.matches = [s 
+                    self.matches = [s
                                     for s in self.options
                                     if s and s.startswith(text)]
                 else:
