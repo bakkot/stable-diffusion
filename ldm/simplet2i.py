@@ -513,6 +513,7 @@ The vast majority of these arguments default to reasonable values.
 
         name = seed
         noise = torch.randn_like(init_latent_1)
+        noise = slerp(.5, noise, init_latent_2) # bias the noise in the direction of the target
 
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
