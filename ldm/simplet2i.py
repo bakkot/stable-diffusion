@@ -519,7 +519,7 @@ The vast majority of these arguments default to reasonable values.
                 # e.g. for 1 iteration, we want to generate only the midpoint i.e. 1/2
                 # for 2 iterations we want to generate 1/3 and 2/3
                 # etc
-                t = int((n + 1)/(iterations + 1) * steps)
+                t = (n + 1)/(iterations + 1)
 
                 seed_everything(seed)
                 for prompts in tqdm(data, desc="data", dynamic_ncols=True):
