@@ -470,6 +470,7 @@ The vast majority of these arguments default to reasonable values.
         cfg_scale  = cfg_scale  or self.cfg_scale
         ddim_eta   = ddim_eta   or self.ddim_eta
         iterations = iterations or self.iterations
+        strength   = strength   or self.strength
         embedding_path = embedding_path or self.embedding_path
 
         assert cfg_scale>1.0, "CFG_Scale (-C) must be >1.0"
@@ -511,6 +512,7 @@ The vast majority of these arguments default to reasonable values.
         tic    = time.time()
 
         name = seed
+        t_enc = int(strength * steps)
 
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
@@ -550,7 +552,13 @@ The vast majority of these arguments default to reasonable values.
                     # # decode it
                     # samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                     #                             unconditional_conditioning=uc,)
-                    samples = slerp(t, init_latent_1, init_latent_2)
+
+                    init_latent = slerp(t, init_latent_1, init_latent_2)
+                    # encode (scaled latent)
+                    z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(self.device))
+                    # decode it
+                    samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
+                                                unconditional_conditioning=uc,)
 
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
