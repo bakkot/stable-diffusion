@@ -555,7 +555,7 @@ The vast majority of these arguments default to reasonable values.
 
                     init_latent = slerp(t, init_latent_1, init_latent_2)
                     # encode (scaled latent)
-                    z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(self.device))
+                    z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]).to(self.device))
                     # decode it
                     samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                 unconditional_conditioning=uc,)
