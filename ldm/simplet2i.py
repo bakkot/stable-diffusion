@@ -715,7 +715,10 @@ The vast majority of these arguments default to reasonable values.
 
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                        filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}{'-best' if is_improvement else ''}.png')
+                        suffix = ''
+                        if is_improvement:
+                            suffix = '-best'
+                        filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}{suffix}.png')
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
