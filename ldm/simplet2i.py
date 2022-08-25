@@ -523,7 +523,7 @@ The vast majority of these arguments default to reasonable values.
                 # etc
                 t = (n + 1)/(iterations + 1)
 
-                strength = .1 + math.sin(2 * math.pi * t) * .8 # more strength in the middle
+                strength = .1 + math.sin(2 * math.pi * t) * .65 # more strength in the middle
                 t_enc = int(strength * steps)
 
                 seed_everything(seed)
