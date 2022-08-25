@@ -484,6 +484,8 @@ The vast majority of these arguments default to reasonable values.
         image_count = 0 # actual number of iterations performed
         tic    = time.time()
 
+        name = seed
+
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
             for n in trange(iterations, desc="Sampling"):
@@ -518,17 +520,18 @@ The vast majority of these arguments default to reasonable values.
                         c = model.get_learned_conditioning(prompts)
 
                     # encode (scaled latent)
-                    z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]).to(self.device), noise = init_latent_2)
-                    # decode it
-                    samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
-                                                unconditional_conditioning=uc,)
+                    # z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]).to(self.device), noise = init_latent_2)
+                    # # decode it
+                    # samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
+                    #                             unconditional_conditioning=uc,)
+                    samples = init_latent_1
 
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                        filename = os.path.join(outdir, str(seed) + "." + str(image_count) + ".png")
+                        filename = os.path.join(outdir, str(name) + "." + str(image_count) + ".png")
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
