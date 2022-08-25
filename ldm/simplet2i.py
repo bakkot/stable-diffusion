@@ -600,7 +600,7 @@ The vast majority of these arguments default to reasonable values.
     def imgs2img_walk(self,prompt,outdir=None,init_img_1=None,init_img_2=None,iterations=None,
                 steps=None,seed=None,grid=None,individual=None,width=None,height=None,
                 cfg_scale=None,ddim_eta=None,strength=None,embedding_path=None,
-                skip_normalize=False,variants=None,walk_steps=5):   # note the "variants" option is an unused hack caused by how options are passed
+                skip_normalize=False,variants=None):   # note the "variants" option is an unused hack caused by how options are passed
         """
         Generate an image from the prompt and the initial image, writing iteration images into the outdir
         The output is a list of lists in the format: [[filename1,seed1], [filename2,seed2],...]
@@ -666,62 +666,61 @@ The vast majority of these arguments default to reasonable values.
         best_dist = dist(init_latent_1, init_latent_2)
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
-            for k in range(walk_steps):
-                print(f'taking step {k + 1} of {walk_steps}')
-                current_latent = best
-                for n in range(iterations):
-                    t_enc = int(strength * steps)
+            for n in range(iterations):
+                print(f'taking step {k + 1} of {walk_steps}, current best distance {best_dist}')
+                t_enc = int(strength * steps)
 
-                    seed_everything(seed)
-                    for prompts in tqdm(data, desc="data", dynamic_ncols=True):
-                        uc = None
-                        if cfg_scale != 1.0:
-                            uc = model.get_learned_conditioning([""])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
+                seed_everything(seed)
+                for prompts in tqdm(data, desc="data", dynamic_ncols=True):
+                    uc = None
+                    if cfg_scale != 1.0:
+                        uc = model.get_learned_conditioning([""])
+                    if isinstance(prompts, tuple):
+                        prompts = list(prompts)
 
-                        # weighted sub-prompts
-                        subprompts,weights = T2I._split_weighted_subprompts(prompts[0])
-                        if len(subprompts) > 1:
-                            # i dont know if this is correct.. but it works
-                            c = torch.zeros_like(uc)
-                            # get total weight for normalizing
-                            totalWeight = sum(weights)
-                            # normalize each "sub prompt" and add it
-                            for i in range(0,len(subprompts)):
-                                weight = weights[i]
-                                if not skip_normalize:
-                                    weight = weight / totalWeight
-                                c = torch.add(c,model.get_learned_conditioning(subprompts[i]), alpha=weight)
-                        else: # just standard 1 prompt
-                            c = model.get_learned_conditioning(prompts)
+                    # weighted sub-prompts
+                    subprompts,weights = T2I._split_weighted_subprompts(prompts[0])
+                    if len(subprompts) > 1:
+                        # i dont know if this is correct.. but it works
+                        c = torch.zeros_like(uc)
+                        # get total weight for normalizing
+                        totalWeight = sum(weights)
+                        # normalize each "sub prompt" and add it
+                        for i in range(0,len(subprompts)):
+                            weight = weights[i]
+                            if not skip_normalize:
+                                weight = weight / totalWeight
+                            c = torch.add(c,model.get_learned_conditioning(subprompts[i]), alpha=weight)
+                    else: # just standard 1 prompt
+                        c = model.get_learned_conditioning(prompts)
 
-                        # encode (scaled latent)
-                        z_enc = sampler.stochastic_encode(current_latent, torch.tensor([t_enc]).to(self.device))
-                        # decode it
-                        samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
-                                                    unconditional_conditioning=uc,)
-                        print()
+                    # encode (scaled latent)
+                    z_enc = sampler.stochastic_encode(current_latent, torch.tensor([t_enc]).to(self.device))
+                    # decode it
+                    samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
+                                                unconditional_conditioning=uc,)
+                    print()
 
-                        print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
-                        sample_dist = dist(samples, init_latent_2)
-                        if sample_dist < best_dist:
-                            print('improvement!')
-                            best_dist = sample_dist
-                            best = samples
+                    sample_dist = dist(samples, init_latent_2)
+                    print(f'distances: {dist(init_latent_1, samples)}, {sample_dist}')
+                    is_improvement = False
+                    if sample_dist < best_dist:
+                        print('######## improvement: ${sample_dist} #######')
+                        best_dist = sample_dist
+                        best = samples
+                        is_improvement = True
 
-                        x_samples = model.decode_first_stage(samples)
-                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+                    x_samples = model.decode_first_stage(samples)
+                    x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
-
-                        for x_sample in x_samples:
-                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                            filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}.png')
-                            assert not os.path.exists(filename)
-                            Image.fromarray(x_sample.astype(np.uint8)).save(filename)
-                            images.append([filename,seed])
-                    image_count +=1
-                    seed = self._new_seed()
+                    for x_sample in x_samples:
+                        x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                        filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}{'-best' if is_improvement else ''}.png')
+                        assert not os.path.exists(filename)
+                        Image.fromarray(x_sample.astype(np.uint8)).save(filename)
+                        images.append([filename,seed])
+                image_count +=1
+                seed = self._new_seed()
 
         toc = time.time()
         print(f'{image_count} images generated in',"%4.2fs"% (toc-tic))
