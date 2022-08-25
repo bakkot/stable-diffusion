@@ -695,7 +695,7 @@ The vast majority of these arguments default to reasonable values.
                         c = model.get_learned_conditioning(prompts)
 
                     # encode (scaled latent)
-                    z_enc = sampler.stochastic_encode(current_latent, torch.tensor([t_enc]).to(self.device))
+                    z_enc = sampler.stochastic_encode(best, torch.tensor([t_enc]).to(self.device))
                     # decode it
                     samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                 unconditional_conditioning=uc,)
