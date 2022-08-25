@@ -512,7 +512,6 @@ The vast majority of these arguments default to reasonable values.
         tic    = time.time()
 
         name = seed
-        t_enc = int(strength * steps)
         noise = torch.randn_like(init_latent_1)
 
         with precision_scope(self.device.type), model.ema_scope():
@@ -523,6 +522,9 @@ The vast majority of these arguments default to reasonable values.
                 # for 2 iterations we want to generate 1/3 and 2/3
                 # etc
                 t = (n + 1)/(iterations + 1)
+
+                strength = .1 + math.sin(2 * math.pi * t)/.8 # more strength in the middle
+                t_enc = int(strength * steps)
 
                 seed_everything(seed)
                 for prompts in tqdm(data, desc="data", dynamic_ncols=True):
