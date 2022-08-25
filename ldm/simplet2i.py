@@ -667,7 +667,7 @@ The vast majority of these arguments default to reasonable values.
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
             for n in range(iterations):
-                print(f'taking step {k + 1} of {walk_steps}, current best distance {best_dist}')
+                print(f'taking step {n + 1} of {iterations}, current best distance {best_dist}')
                 t_enc = int(strength * steps)
 
                 seed_everything(seed)
@@ -718,7 +718,7 @@ The vast majority of these arguments default to reasonable values.
                         suffix = ''
                         if is_improvement:
                             suffix = '-best'
-                        filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}{suffix}.png')
+                        filename = os.path.join(outdir, f'{name}.{image_count:03}{suffix}.png')
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
