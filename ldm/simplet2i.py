@@ -63,6 +63,7 @@ from itertools import islice
 from einops import rearrange, repeat
 from torchvision.utils import make_grid
 from pytorch_lightning import seed_everything
+from torchmetrics.functional import pairwise_euclidean_distance
 from torch import autocast
 from contextlib import contextmanager, nullcontext
 import time
@@ -513,7 +514,9 @@ The vast majority of these arguments default to reasonable values.
 
         name = seed
         noise = torch.randn_like(init_latent_1)
-        noise = slerp(.1, noise, init_latent_2) # bias the noise in the direction of the target
+        # noise = slerp(.1, noise, init_latent_2) # bias the noise in the direction of the target
+
+        print(f'initial: {pairwise_euclidean_distance(init_latent_1, init_latent_1)}, {pairwise_euclidean_distance(init_latent_1, init_latent_2)}')
 
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
@@ -567,7 +570,9 @@ The vast majority of these arguments default to reasonable values.
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
+
                     for x_sample in x_samples:
+                        print(f'distances: {pairwise_euclidean_distance(init_latent_1, x_sample)}, {pairwise_euclidean_distance(x_sample, init_latent_2)}')
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                         filename = os.path.join(outdir, f'{name}.{image_count:03}.png')
                         assert not os.path.exists(filename)

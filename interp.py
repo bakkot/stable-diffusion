@@ -19,4 +19,4 @@ t2i.load_model()
 prompt = "elf queen with rainbow hair, golden hour. colored pencil drawing by rossdraws andrei riabovitchev trending on artstation"
 
 print("interpolating...")
-t2i.imgs2img(prompt, init_img_1 = "inputs/elf.png", init_img_2 = "inputs/elf2.png", iterations = 40)
+t2i.imgs2img(prompt, init_img_1 = "inputs/elf.png", init_img_2 = "inputs/elf2.png", iterations = 6)
