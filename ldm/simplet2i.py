@@ -572,16 +572,7 @@ The vast majority of these arguments default to reasonable values.
                     samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                 unconditional_conditioning=uc,)
 
-                    print('dist 1')
-                    try:
-                        print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
-                    except e:
-                        print(e)
-                    print('dist 2')
-                    try:
-                        print(f'distances: {dist(init_latent_1, samples[0])}, {dist(samples[0], init_latent_2)}')
-                    except e:
-                        print(e)
+                    print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
 
                     x_samples = model.decode_first_stage(samples)
                     x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
@@ -589,7 +580,6 @@ The vast majority of these arguments default to reasonable values.
 
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                        print(f'distances: {dist(init_latent_1, x_sample)}, {dist(x_sample, init_latent_2)}')
                         filename = os.path.join(outdir, f'{name}.{image_count:03}.png')
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
