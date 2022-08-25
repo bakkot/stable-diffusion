@@ -568,7 +568,7 @@ The vast majority of these arguments default to reasonable values.
 
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                        filename = os.path.join(outdir, str(name) + "." + str(image_count) + ".png")
+                        filename = os.path.join(outdir, f'{name}.{basecount:03}.png')
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
