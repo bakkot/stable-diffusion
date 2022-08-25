@@ -516,7 +516,12 @@ The vast majority of these arguments default to reasonable values.
         noise = torch.randn_like(init_latent_1)
         # noise = slerp(.1, noise, init_latent_2) # bias the noise in the direction of the target
 
-        print(f'initial: {pairwise_euclidean_distance(init_latent_1, init_latent_1)}, {pairwise_euclidean_distance(init_latent_1, init_latent_2)}')
+        def dist(a, b):
+            a = a.cpu().numpy()
+            b = b.cpu().numpy()
+            return np.linalg.norm(a - b)
+
+        print(f'initial: {dist(init_latent_1, init_latent_1)}, {dist(init_latent_1, init_latent_2)}')
 
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
@@ -572,7 +577,7 @@ The vast majority of these arguments default to reasonable values.
 
 
                     for x_sample in x_samples:
-                        print(f'distances: {pairwise_euclidean_distance(init_latent_1, x_sample)}, {pairwise_euclidean_distance(x_sample, init_latent_2)}')
+                        print(f'distances: {dist(init_latent_1, x_sample)}, {dist(x_sample, init_latent_2)}')
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                         filename = os.path.join(outdir, f'{name}.{image_count:03}.png')
                         assert not os.path.exists(filename)
