@@ -484,59 +484,57 @@ The vast majority of these arguments default to reasonable values.
         image_count = 0 # actual number of iterations performed
         tic    = time.time()
 
-        # Gawd. Too many levels of indent here. Need to refactor into smaller routines!
-        try:
-            with precision_scope(self.device.type), model.ema_scope():
-                all_samples = list()
-                for n in trange(iterations, desc="Sampling"):
-                    # the +1/+2 are so we don't generate the endpoints, which we already have
-                    # e.g. for 1 iteration, we want to generate only the midpoint i.e. 1/2
-                    # for 2 iterations we want to generate 1/3 and 2/3
-                    # etc
-                    t_enc = int((n + 1)/(iterations + 2) * steps)
+        with precision_scope(self.device.type), model.ema_scope():
+            all_samples = list()
+            for n in trange(iterations, desc="Sampling"):
+                # the +1/+2 are so we don't generate the endpoints, which we already have
+                # e.g. for 1 iteration, we want to generate only the midpoint i.e. 1/2
+                # for 2 iterations we want to generate 1/3 and 2/3
+                # etc
+                t_enc = int((n + 1)/(iterations + 2) * steps)
 
-                    seed_everything(seed)
-                    for prompts in tqdm(data, desc="data", dynamic_ncols=True):
-                        uc = None
-                        if cfg_scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
+                seed_everything(seed)
+                for prompts in tqdm(data, desc="data", dynamic_ncols=True):
+                    uc = None
+                    if cfg_scale != 1.0:
+                        uc = model.get_learned_conditioning(batch_size * [""])
+                    if isinstance(prompts, tuple):
+                        prompts = list(prompts)
 
-                        # weighted sub-prompts
-                        subprompts,weights = T2I._split_weighted_subprompts(prompts[0])
-                        if len(subprompts) > 1:
-                            # i dont know if this is correct.. but it works
-                            c = torch.zeros_like(uc)
-                            # get total weight for normalizing
-                            totalWeight = sum(weights)
-                            # normalize each "sub prompt" and add it
-                            for i in range(0,len(subprompts)):
-                                weight = weights[i]
-                                if not skip_normalize:
-                                    weight = weight / totalWeight
-                                c = torch.add(c,model.get_learned_conditioning(subprompts[i]), alpha=weight)
-                        else: # just standard 1 prompt
-                            c = model.get_learned_conditioning(prompts)
+                    # weighted sub-prompts
+                    subprompts,weights = T2I._split_weighted_subprompts(prompts[0])
+                    if len(subprompts) > 1:
+                        # i dont know if this is correct.. but it works
+                        c = torch.zeros_like(uc)
+                        # get total weight for normalizing
+                        totalWeight = sum(weights)
+                        # normalize each "sub prompt" and add it
+                        for i in range(0,len(subprompts)):
+                            weight = weights[i]
+                            if not skip_normalize:
+                                weight = weight / totalWeight
+                            c = torch.add(c,model.get_learned_conditioning(subprompts[i]), alpha=weight)
+                    else: # just standard 1 prompt
+                        c = model.get_learned_conditioning(prompts)
 
-                        # encode (scaled latent)
-                        z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]*batch_size).to(self.device), noise = init_latent_2)
-                        # decode it
-                        samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
-                                                    unconditional_conditioning=uc,)
+                    # encode (scaled latent)
+                    z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]*batch_size).to(self.device), noise = init_latent_2)
+                    # decode it
+                    samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
+                                                unconditional_conditioning=uc,)
 
-                        x_samples = model.decode_first_stage(samples)
-                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+                    x_samples = model.decode_first_stage(samples)
+                    x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
 
-                        for x_sample in x_samples:
-                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                            filename = self._unique_filename(outdir,previousname=filename,
-                                                                seed=seed,isbatch=(batch_size>1))
-                            assert not os.path.exists(filename)
-                            Image.fromarray(x_sample.astype(np.uint8)).save(filename)
-                            images.append([filename,seed])
-                    image_count +=1
-                    seed = self._new_seed()
+                    for x_sample in x_samples:
+                        x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                        filename = self._unique_filename(outdir,previousname=filename,
+                                                            seed=seed,isbatch=(batch_size>1))
+                        assert not os.path.exists(filename)
+                        Image.fromarray(x_sample.astype(np.uint8)).save(filename)
+                        images.append([filename,seed])
+                image_count +=1
+                seed = self._new_seed()
 
         toc = time.time()
         print(f'{image_count} images generated in',"%4.2fs"% (toc-tic))
