@@ -487,11 +487,11 @@ The vast majority of these arguments default to reasonable values.
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
             for n in trange(iterations, desc="Sampling"):
-                # the +1/+2 are so we don't generate the endpoints, which we already have
+                # the +1s are so we don't generate the endpoints, which we already have
                 # e.g. for 1 iteration, we want to generate only the midpoint i.e. 1/2
                 # for 2 iterations we want to generate 1/3 and 2/3
                 # etc
-                t_enc = int((n + 1)/(iterations + 2) * steps)
+                t_enc = int((n + 1)/(iterations + 1) * steps)
 
                 seed_everything(seed)
                 for prompts in tqdm(data, desc="data", dynamic_ncols=True):
@@ -528,8 +528,7 @@ The vast majority of these arguments default to reasonable values.
 
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                        filename = self._unique_filename(outdir,previousname=filename,
-                                                            seed=seed,isbatch=False)
+                        filename = os.path.join(outdir, str(seed) + "." + str(image_count) + ".png")
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
