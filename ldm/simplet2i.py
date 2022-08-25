@@ -705,7 +705,7 @@ The vast majority of these arguments default to reasonable values.
                     print(f'distances: {dist(init_latent_1, samples)}, {sample_dist}')
                     is_improvement = False
                     if sample_dist < best_dist:
-                        print('######## improvement: ${sample_dist} #######')
+                        print(f'######## improvement: {sample_dist} #######')
                         best_dist = sample_dist
                         best = samples
                         is_improvement = True
