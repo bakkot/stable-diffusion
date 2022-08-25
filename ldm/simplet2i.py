@@ -669,7 +669,7 @@ The vast majority of these arguments default to reasonable values.
             for k in range(walk_steps):
                 print(f'taking step {k + 1} of {walk_steps}')
                 current_latent = best
-                for n in trange(iterations, desc="Sampling"):
+                for n in range(iterations):
                     t_enc = int(strength * steps)
 
                     seed_everything(seed)
@@ -701,13 +701,14 @@ The vast majority of these arguments default to reasonable values.
                         # decode it
                         samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                     unconditional_conditioning=uc,)
+                        print()
 
                         print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
                         sample_dist = dist(init_latent_1, samples)
                         if sample_dist < best_dist:
                             print('improvement!')
                             best_dist = sample_dist
-                            best = sample_dist
+                            best = samples
 
                         x_samples = model.decode_first_stage(samples)
                         x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
