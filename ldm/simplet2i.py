@@ -459,7 +459,7 @@ The vast majority of these arguments default to reasonable values.
 
         precision_scope = autocast if self.precision=="autocast" else nullcontext
 
-        data = [batch_size * [prompt]]
+        data = [[prompt]]
 
         sampler = DDIMSampler(model, device=self.device)
 
@@ -497,7 +497,7 @@ The vast majority of these arguments default to reasonable values.
                 for prompts in tqdm(data, desc="data", dynamic_ncols=True):
                     uc = None
                     if cfg_scale != 1.0:
-                        uc = model.get_learned_conditioning(batch_size * [""])
+                        uc = model.get_learned_conditioning([""])
                     if isinstance(prompts, tuple):
                         prompts = list(prompts)
 
@@ -518,7 +518,7 @@ The vast majority of these arguments default to reasonable values.
                         c = model.get_learned_conditioning(prompts)
 
                     # encode (scaled latent)
-                    z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]*batch_size).to(self.device), noise = init_latent_2)
+                    z_enc = sampler.stochastic_encode(init_latent_1, torch.tensor([t_enc]).to(self.device), noise = init_latent_2)
                     # decode it
                     samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                 unconditional_conditioning=uc,)
@@ -529,7 +529,7 @@ The vast majority of these arguments default to reasonable values.
                     for x_sample in x_samples:
                         x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                         filename = self._unique_filename(outdir,previousname=filename,
-                                                            seed=seed,isbatch=(batch_size>1))
+                                                            seed=seed,isbatch=False)
                         assert not os.path.exists(filename)
                         Image.fromarray(x_sample.astype(np.uint8)).save(filename)
                         images.append([filename,seed])
