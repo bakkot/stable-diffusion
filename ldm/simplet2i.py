@@ -704,7 +704,7 @@ The vast majority of these arguments default to reasonable values.
                         print()
 
                         print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
-                        sample_dist = dist(samples, init_latent_12)
+                        sample_dist = dist(samples, init_latent_2)
                         if sample_dist < best_dist:
                             print('improvement!')
                             best_dist = sample_dist
