@@ -595,6 +595,143 @@ The vast majority of these arguments default to reasonable values.
 
 
 
+    # There is lots of shared code between this and txt2img and should be refactored.
+    @torch.no_grad()
+    def imgs2img_walk(self,prompt,outdir=None,init_img_1=None,init_img_2=None,iterations=None,
+                steps=None,seed=None,grid=None,individual=None,width=None,height=None,
+                cfg_scale=None,ddim_eta=None,strength=None,embedding_path=None,
+                skip_normalize=False,variants=None):   # note the "variants" option is an unused hack caused by how options are passed
+        """
+        Generate an image from the prompt and the initial image, writing iteration images into the outdir
+        The output is a list of lists in the format: [[filename1,seed1], [filename2,seed2],...]
+        """
+        outdir     = outdir     or self.outdir
+        steps      = steps      or self.steps
+        seed       = seed       or self.seed
+        cfg_scale  = cfg_scale  or self.cfg_scale
+        ddim_eta   = ddim_eta   or self.ddim_eta
+        iterations = iterations or self.iterations
+        strength   = strength   or self.strength
+        embedding_path = embedding_path or self.embedding_path
+
+        assert cfg_scale>1.0, "CFG_Scale (-C) must be >1.0"
+
+        if init_img_1 is None:
+            print("no init_img_2 provided!")
+            return []
+        if init_img_2 is None:
+            print("no init_img_1 provided!")
+            return []
+
+        model = self.load_model()  # will instantiate the model or return it from cache
+
+        precision_scope = autocast if self.precision=="autocast" else nullcontext
+
+        data = [[prompt]]
+
+        sampler = DDIMSampler(model, device=self.device)
+
+        # make directories and establish names for the output files
+        os.makedirs(outdir, exist_ok=True)
+
+        assert os.path.isfile(init_img_1)
+        init_img_1 = self._load_img(init_img_1).to(self.device)
+        with precision_scope(self.device.type):
+            init_latent_1 = model.get_first_stage_encoding(model.encode_first_stage(init_img_1))  # move to latent space
+
+        assert os.path.isfile(init_img_2)
+        init_img_2 = self._load_img(init_img_2).to(self.device)
+        with precision_scope(self.device.type):
+            init_latent_2 = model.get_first_stage_encoding(model.encode_first_stage(init_img_2))  # move to latent space
+
+        sampler.make_schedule(ddim_num_steps=steps, ddim_eta=ddim_eta, verbose=False)
+
+        images = list()
+        seeds  = list()
+        filename = None
+        image_count = 0 # actual number of iterations performed
+        tic    = time.time()
+
+        name = seed
+        noise = torch.randn_like(init_latent_1)
+        # noise = slerp(.1, noise, init_latent_2) # bias the noise in the direction of the target
+
+        def dist(a, b):
+            a = a.cpu().numpy()
+            b = b.cpu().numpy()
+            return np.linalg.norm(a - b)
+
+        print(f'initial: {dist(init_latent_1, init_latent_1)}, {dist(init_latent_1, init_latent_2)}')
+
+        strength = .65 # more strength in the middle
+
+        best = init_latent_1
+        best_dist = dist(init_latent_1, init_latent_2)
+        with precision_scope(self.device.type), model.ema_scope():
+            all_samples = list()
+            for k in range(5):
+                current_latent = best
+                for n in trange(iterations, desc="Sampling"):
+                    t_enc = int(strength * steps)
+
+                    seed_everything(seed)
+                    for prompts in tqdm(data, desc="data", dynamic_ncols=True):
+                        uc = None
+                        if cfg_scale != 1.0:
+                            uc = model.get_learned_conditioning([""])
+                        if isinstance(prompts, tuple):
+                            prompts = list(prompts)
+
+                        # weighted sub-prompts
+                        subprompts,weights = T2I._split_weighted_subprompts(prompts[0])
+                        if len(subprompts) > 1:
+                            # i dont know if this is correct.. but it works
+                            c = torch.zeros_like(uc)
+                            # get total weight for normalizing
+                            totalWeight = sum(weights)
+                            # normalize each "sub prompt" and add it
+                            for i in range(0,len(subprompts)):
+                                weight = weights[i]
+                                if not skip_normalize:
+                                    weight = weight / totalWeight
+                                c = torch.add(c,model.get_learned_conditioning(subprompts[i]), alpha=weight)
+                        else: # just standard 1 prompt
+                            c = model.get_learned_conditioning(prompts)
+
+                        init_latent = current_latent
+                        # encode (scaled latent)
+                        z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]).to(self.device), noise = noise)
+                        # decode it
+                        samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
+                                                    unconditional_conditioning=uc,)
+
+                        print(f'distances: {dist(init_latent_1, samples)}, {dist(samples, init_latent_2)}')
+                        sample_dist = dist(init_latent_1, samples)
+                        if sample_dist < best_dist:
+                            print('improvement!')
+                            best_dist = sample_dist
+                            best = sample_dist
+
+                        x_samples = model.decode_first_stage(samples)
+                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+
+
+                        for x_sample in x_samples:
+                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                            filename = os.path.join(outdir, f'{name}.{k:02}.{image_count:03}.png')
+                            assert not os.path.exists(filename)
+                            Image.fromarray(x_sample.astype(np.uint8)).save(filename)
+                            images.append([filename,seed])
+                    image_count +=1
+                    seed = self._new_seed()
+
+        toc = time.time()
+        print(f'{image_count} images generated in',"%4.2fs"% (toc-tic))
+
+        return images
+
+
+
 
     def _make_grid(self,samples,seeds,batch_size,iterations,outdir):
         images = list()
