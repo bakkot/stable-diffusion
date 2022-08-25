@@ -600,7 +600,7 @@ The vast majority of these arguments default to reasonable values.
     def imgs2img_walk(self,prompt,outdir=None,init_img_1=None,init_img_2=None,iterations=None,
                 steps=None,seed=None,grid=None,individual=None,width=None,height=None,
                 cfg_scale=None,ddim_eta=None,strength=None,embedding_path=None,
-                skip_normalize=False,variants=None):   # note the "variants" option is an unused hack caused by how options are passed
+                skip_normalize=False,variants=None,walk_steps=5):   # note the "variants" option is an unused hack caused by how options are passed
         """
         Generate an image from the prompt and the initial image, writing iteration images into the outdir
         The output is a list of lists in the format: [[filename1,seed1], [filename2,seed2],...]
@@ -652,9 +652,7 @@ The vast majority of these arguments default to reasonable values.
         image_count = 0 # actual number of iterations performed
         tic    = time.time()
 
-        name = seed
-        noise = torch.randn_like(init_latent_1)
-        # noise = slerp(.1, noise, init_latent_2) # bias the noise in the direction of the target
+        name = seed # just so we don't conflict with things
 
         def dist(a, b):
             a = a.cpu().numpy()
@@ -663,13 +661,13 @@ The vast majority of these arguments default to reasonable values.
 
         print(f'initial: {dist(init_latent_1, init_latent_1)}, {dist(init_latent_1, init_latent_2)}')
 
-        strength = .65 # more strength in the middle
 
         best = init_latent_1
         best_dist = dist(init_latent_1, init_latent_2)
         with precision_scope(self.device.type), model.ema_scope():
             all_samples = list()
-            for k in range(5):
+            for k in range(walk_steps):
+                print(f'taking step {k + 1} of {walk_steps}')
                 current_latent = best
                 for n in trange(iterations, desc="Sampling"):
                     t_enc = int(strength * steps)
@@ -698,9 +696,8 @@ The vast majority of these arguments default to reasonable values.
                         else: # just standard 1 prompt
                             c = model.get_learned_conditioning(prompts)
 
-                        init_latent = current_latent
                         # encode (scaled latent)
-                        z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]).to(self.device), noise = noise)
+                        z_enc = sampler.stochastic_encode(current_latent, torch.tensor([t_enc]).to(self.device))
                         # decode it
                         samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=cfg_scale,
                                                     unconditional_conditioning=uc,)
