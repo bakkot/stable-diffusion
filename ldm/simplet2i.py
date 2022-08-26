@@ -341,7 +341,7 @@ The vast majority of these arguments default to reasonable values.
                                                 conditioning=c,
                                                 batch_size=1,
                                                 x_T = s,
-                                                shape = s.shape,
+                                                shape = None,
                                                 verbose=False,
                                                 unconditional_guidance_scale=self.cfg_scale,
                                                 unconditional_conditioning=uc,
