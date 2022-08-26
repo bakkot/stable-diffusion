@@ -344,6 +344,11 @@ The vast majority of these arguments default to reasonable values.
                 print(torch.linalg.vector_norm(torch.randn_like(s)))
                 print(torch.linalg.vector_norm(init_latent_1))
                 print(torch.linalg.vector_norm(init_latent_2))
+
+                print(torch.linalg.matrix_norm(init_latent_1 * .2))
+                print(torch.linalg.matrix_norm(init_latent_1 * [[.2, .2, .2, .2]]))
+
+                return
                 # s = .5 * s + .5 * torch.randn_like(s)
                 steps = 100
                 sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
