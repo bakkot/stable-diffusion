@@ -329,16 +329,12 @@ The vast majority of these arguments default to reasonable values.
                 init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
                 s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
-                steps = 200
+                steps = 100
                 sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
 
                 uc, c = self._get_uc_and_c("elf queen with rainbow hair, golden hour. colored pencil drawing by rossdraws andrei riabovitchev trending on artstation", 1, False)
 
-                # encode (scaled latent)
-                # z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(self.device))
-                # decode it
-                t_enc = int(.64 * steps)
-                samples = sampler.decode(s, c, t_enc, unconditional_guidance_scale=self.cfg_scale,
+                samples = sampler.decode(s, c, steps, unconditional_guidance_scale=self.cfg_scale,
                                             unconditional_conditioning=uc,)
 
                 [d] = self._samples_to_images(samples)
