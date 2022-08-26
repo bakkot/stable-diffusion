@@ -329,32 +329,45 @@ The vast majority of these arguments default to reasonable values.
                 init_image = self._load_img(img_2).to(self.device)
                 init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
-                s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
+                # s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
 
-                print(init_latent_1.shape)
-                print('mat norm')
-                print(torch.linalg.matrix_norm(torch.randn_like(s)))
-                print(torch.linalg.matrix_norm(torch.randn_like(s)))
-                print(torch.linalg.matrix_norm(torch.randn_like(s)))
-                print(torch.linalg.matrix_norm(init_latent_1))
-                print(torch.linalg.matrix_norm(init_latent_2))
-                print('vec norm')
-                print(torch.linalg.vector_norm(torch.randn_like(s)))
-                print(torch.linalg.vector_norm(torch.randn_like(s)))
-                print(torch.linalg.vector_norm(torch.randn_like(s)))
-                print(torch.linalg.vector_norm(init_latent_1))
-                print(torch.linalg.vector_norm(init_latent_2))
+                # print(init_latent_1.shape)
+                # print('mat norm')
+                # print(torch.linalg.matrix_norm(torch.randn_like(s)))
+                # print(torch.linalg.matrix_norm(torch.randn_like(s)))
+                # print(torch.linalg.matrix_norm(torch.randn_like(s)))
+                # print(torch.linalg.matrix_norm(init_latent_1))
+                # print(torch.linalg.matrix_norm(init_latent_2))
+                # print('vec norm')
+                # print(torch.linalg.vector_norm(torch.randn_like(s)))
+                # print(torch.linalg.vector_norm(torch.randn_like(s)))
+                # print(torch.linalg.vector_norm(torch.randn_like(s)))
+                # print(torch.linalg.vector_norm(init_latent_1))
+                # print(torch.linalg.vector_norm(init_latent_2))
 
-                latent_norm = torch.linalg.matrix_norm(init_latent_1)
-                copy = torch.clone(init_latent_1)
+                latent_norm_1 = torch.linalg.matrix_norm(init_latent_1)
+                copy_1 = torch.clone(init_latent_1)
                 for i in range(4):
-                    copy[0, i] *= 64. / latent_norm[0, i]
-                print(torch.linalg.matrix_norm(copy))
-                [d] = self._samples_to_images(copy)
+                    copy_1[0, i] *= 64. / latent_norm_1[0, i]
+                print(torch.linalg.matrix_norm(copy_1))
+                [d] = self._samples_to_images(copy_1)
                 file_writer = PngWriter("outputs")
-                file_writer.write_image(d, 'renormed')
+                file_writer.write_image(d, 'renormed_1')
 
-                return
+                latent_norm_2 = torch.linalg.matrix_norm(init_latent_2)
+                copy_2 = torch.clone(init_latent_2)
+                for i in range(4):
+                    copy_2[0, i] *= 64. / latent_norm_2[0, i]
+                print(torch.linalg.matrix_norm(copy_2))
+                [d] = self._samples_to_images(copy_2)
+                file_writer = PngWriter("outputs")
+                file_writer.write_image(d, 'renormed_2')
+
+                s = slerp((i + 1.) / (N + 1.), copy_1, copy_2)
+                [d] = self._samples_to_images(copy_2)
+                file_writer = PngWriter("outputs")
+                file_writer.write_image(d, 'slerped')
+
                 # s = .5 * s + .5 * torch.randn_like(s)
                 steps = 100
                 sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
