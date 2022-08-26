@@ -350,7 +350,7 @@ The vast majority of these arguments default to reasonable values.
                 for i in range(4):
                     copy[0, i] *= 64. / latent_norm[0, i]
                 print(torch.linalg.matrix_norm(copy))
-                [d] = self._samples_to_images([copy])
+                [d] = self._samples_to_images(copy)
                 file_writer = PngWriter("outputs")
                 file_writer.write_image(d, 'renormed')
 
