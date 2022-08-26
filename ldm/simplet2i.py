@@ -320,27 +320,30 @@ The vast majority of these arguments default to reasonable values.
         sampler = DDIMSampler(self.model, device=self.device)
         precision_scope = autocast
         with precision_scope(self.device.type):
-            init_image = self._load_img(img_1).to(self.device)
-            init_latent_1 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
+            N = 3
+            for i in range(N):
+                init_image = self._load_img(img_1).to(self.device)
+                init_latent_1 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
-            init_image = self._load_img(img_2).to(self.device)
-            init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
+                init_image = self._load_img(img_2).to(self.device)
+                init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
-            s = slerp(.5, init_latent_1, init_latent_2)
-            sampler.make_schedule(ddim_num_steps=self.steps, ddim_eta=self.ddim_eta, verbose=False)
+                s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
+                steps = 200
+                sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
 
-            uc, c = self._get_uc_and_c("elf queen with rainbow hair, golden hour. colored pencil drawing by rossdraws andrei riabovitchev trending on artstation", 1, False)
+                uc, c = self._get_uc_and_c("elf queen with rainbow hair, golden hour. colored pencil drawing by rossdraws andrei riabovitchev trending on artstation", 1, False)
 
-            # encode (scaled latent)
-            # z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(self.device))
-            # decode it
-            t_enc = int(.64 * self.steps)
-            samples = sampler.decode(s, c, t_enc, unconditional_guidance_scale=self.cfg_scale,
-                                        unconditional_conditioning=uc,)
+                # encode (scaled latent)
+                # z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(self.device))
+                # decode it
+                t_enc = int(.64 * steps)
+                samples = sampler.decode(s, c, t_enc, unconditional_guidance_scale=self.cfg_scale,
+                                            unconditional_conditioning=uc,)
 
-            [d] = self._samples_to_images(samples)
-            file_writer = PngWriter("outputs")
-            file_writer.write_image(d, 42)
+                [d] = self._samples_to_images(samples)
+                file_writer = PngWriter("outputs")
+                file_writer.write_image(d, 42)
 
     @torch.no_grad()
     def _txt2img(self,
