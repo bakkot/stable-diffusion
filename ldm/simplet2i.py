@@ -99,6 +99,7 @@ def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
         v1 = v1.cpu().numpy()
 
     dot = np.sum(v0 * v1 / (np.linalg.norm(v0) * np.linalg.norm(v1)))
+    print(f'is cartesian: {np.abs(dot) > DOT_THRESHOLD}')
     if np.abs(dot) > DOT_THRESHOLD:
         v2 = (1 - t) * v0 + t * v1
     else:
@@ -340,7 +341,7 @@ The vast majority of these arguments default to reasonable values.
                                                 conditioning=c,
                                                 batch_size=1,
                                                 x_T = s,
-                                                shape = None,
+                                                shape = s.shape,
                                                 verbose=False,
                                                 unconditional_guidance_scale=self.cfg_scale,
                                                 unconditional_conditioning=uc,
