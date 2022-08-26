@@ -330,6 +330,7 @@ The vast majority of these arguments default to reasonable values.
                 init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
                 s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
+                s = repeat(s, '1 ... -> b ...', b=1)
                 steps = 100
                 sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
 
@@ -341,6 +342,7 @@ The vast majority of these arguments default to reasonable values.
                                                 conditioning=c,
                                                 batch_size=1,
                                                 x_T = s,
+                                                shape = s.shape,
                                                 shape = None,
                                                 verbose=False,
                                                 unconditional_guidance_scale=self.cfg_scale,
