@@ -328,7 +328,7 @@ The vast majority of these arguments default to reasonable values.
 
         s = slerp(.5, init_latent_1, init_latent_2)
         [d] = self._samples_to_images(s)
-        file_writer = PngWriter(outdir)
+        file_writer = PngWriter("outputs")
         file_writer.write_image(d, 42)
 
     @torch.no_grad()
