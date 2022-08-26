@@ -342,7 +342,7 @@ The vast majority of these arguments default to reasonable values.
                                                 conditioning=c,
                                                 batch_size=1,
                                                 x_T = s,
-                                                shape = s.shape,
+                                                shape = [self.latent_channels, 512 // self.downsampling_factor, 512 // self.downsampling_factor],
                                                 verbose=False,
                                                 unconditional_guidance_scale=self.cfg_scale,
                                                 unconditional_conditioning=uc,
