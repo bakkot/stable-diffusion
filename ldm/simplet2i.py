@@ -330,7 +330,7 @@ The vast majority of these arguments default to reasonable values.
                 init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
                 s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
-                s = torch.RANDN_LIKE(s)
+                s = torch.randn_like(s)
                 steps = 100
                 sampler.make_schedule(ddim_num_steps=steps, ddim_eta=self.ddim_eta, verbose=False)
 
