@@ -331,7 +331,7 @@ The vast majority of these arguments default to reasonable values.
 
                 s = slerp((i + 1.) / (N + 1.), init_latent_1, init_latent_2)
 
-                print(init_latent_1.shape))
+                print(init_latent_1.shape)
                 print('mat norm')
                 print(torch.linalg.matrix_norm(torch.randn_like(s)))
                 print(torch.linalg.matrix_norm(torch.randn_like(s)))
