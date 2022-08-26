@@ -345,12 +345,14 @@ The vast majority of these arguments default to reasonable values.
                 print(torch.linalg.vector_norm(init_latent_1))
                 print(torch.linalg.vector_norm(init_latent_2))
 
-                print(torch.linalg.matrix_norm(init_latent_1 * .2))
+                latent_norm = torch.linalg.matrix_norm(init_latent_1)
                 copy = torch.clone(init_latent_1)
-                copy[0, 1] *= .2
+                for i in range(4):
+                    copy[0, i] *= 64. / latent_norm[0, i]
                 print(torch.linalg.matrix_norm(copy))
-
-                print(torch.linalg.matrix_norm(init_latent_1 * [[.2, .2, .2, .2]]))
+                [d] = self._samples_to_images([copy])
+                file_writer = PngWriter("outputs")
+                file_writer.write_image(d, 'renormed')
 
                 return
                 # s = .5 * s + .5 * torch.randn_like(s)
