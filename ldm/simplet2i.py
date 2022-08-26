@@ -338,8 +338,7 @@ The vast majority of these arguments default to reasonable values.
             samples = sampler.decode(s, c, t_enc, unconditional_guidance_scale=self.cfg_scale,
                                         unconditional_conditioning=uc,)
 
-            print(s)
-            [d] = self._samples_to_images(s)
+            [d] = self._samples_to_images(samples)
             file_writer = PngWriter("outputs")
             file_writer.write_image(d, 42)
 
