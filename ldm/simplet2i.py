@@ -341,7 +341,7 @@ The vast majority of these arguments default to reasonable values.
                                                 batch_size=1,
                                                 x_T = s,
                                                 verbose=False,
-                                                unconditional_guidance_scale=cfg_scale,
+                                                unconditional_guidance_scale=self.cfg_scale,
                                                 unconditional_conditioning=uc,
                                                 eta=self.ddim_eta)
 
