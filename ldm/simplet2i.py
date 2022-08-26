@@ -334,8 +334,17 @@ The vast majority of these arguments default to reasonable values.
 
                 uc, c = self._get_uc_and_c("elf queen with rainbow hair, golden hour. colored pencil drawing by rossdraws andrei riabovitchev trending on artstation", 1, False)
 
-                samples = sampler.decode(s, c, steps, unconditional_guidance_scale=self.cfg_scale,
-                                            unconditional_conditioning=uc,)
+                # samples = sampler.decode(s, c, steps, unconditional_guidance_scale=self.cfg_scale,
+                #                             unconditional_conditioning=uc,)
+                samples, _ = sampler.sample(S=steps,
+                                                conditioning=c,
+                                                batch_size=1,
+                                                x_T = s,
+                                                shape=shape,
+                                                verbose=False,
+                                                unconditional_guidance_scale=cfg_scale,
+                                                unconditional_conditioning=uc,
+                                                eta=self.ddim_eta)
 
                 [d] = self._samples_to_images(samples)
                 file_writer = PngWriter("outputs")
