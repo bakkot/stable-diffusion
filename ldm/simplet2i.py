@@ -89,7 +89,31 @@ for row in results:
 Note that the old txt2img() and img2img() calls are deprecated but will
 still work.
 """
+def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
+    """ helper function to spherically interpolate two arrays v1 v2 """
 
+    if not isinstance(v0, np.ndarray):
+        inputs_are_torch = True
+        input_device = v0.device
+        v0 = v0.cpu().numpy()
+        v1 = v1.cpu().numpy()
+
+    dot = np.sum(v0 * v1 / (np.linalg.norm(v0) * np.linalg.norm(v1)))
+    if np.abs(dot) > DOT_THRESHOLD:
+        v2 = (1 - t) * v0 + t * v1
+    else:
+        theta_0 = np.arccos(dot)
+        sin_theta_0 = np.sin(theta_0)
+        theta_t = theta_0 * t
+        sin_theta_t = np.sin(theta_t)
+        s0 = np.sin(theta_0 - theta_t) / sin_theta_0
+        s1 = sin_theta_t / sin_theta_0
+        v2 = s0 * v0 + s1 * v1
+
+    if inputs_are_torch:
+        v2 = torch.from_numpy(v2).to(input_device)
+
+    return v2
 
 class T2I:
     """T2I class
@@ -291,6 +315,21 @@ The vast majority of these arguments default to reasonable values.
         toc  = time.time()
         print(f'{len(results)} images generated in',"%4.2fs"% (toc-tic))
         return results
+
+    def dumb_interp(self, img_1, img_2):
+        sampler = DDIMSampler(self.model, device=self.device)
+        init_image = self._load_img(img_1).to(self.device)
+        with precision_scope(self.device.type):
+            init_latent_1 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
+
+        init_image = self._load_img(img_2).to(self.device)
+        with precision_scope(self.device.type):
+            init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
+
+        s = slerp(.5, init_latent_1, init_latent_2)
+        [d] = self._samples_to_images(s)
+        file_writer = PngWriter(outdir)
+        file_writer.write_image(d, 42)
 
     @torch.no_grad()
     def _txt2img(self,
