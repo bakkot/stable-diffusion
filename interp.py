@@ -5,11 +5,7 @@ import torch
 from pytorch_lightning import seed_everything
 import random
 
-t2i = T2I(
-    latent_diffusion_weights=False,
-    config  = "configs/stable-diffusion/v1-inference.yaml"
-)
-
+t2i = T2I()
 
 transformers.logging.set_verbosity_error()
 
