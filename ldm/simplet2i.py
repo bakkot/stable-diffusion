@@ -318,20 +318,19 @@ The vast majority of these arguments default to reasonable values.
 
     def dumb_interp(self, img_1, img_2):
         sampler = DDIMSampler(self.model, device=self.device)
-        init_image = self._load_img(img_1).to(self.device)
         precision_scope = autocast
         with precision_scope(self.device.type):
+            init_image = self._load_img(img_1).to(self.device)
             init_latent_1 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
-        init_image = self._load_img(img_2).to(self.device)
-        with precision_scope(self.device.type):
+            init_image = self._load_img(img_2).to(self.device)
             init_latent_2 = self.model.get_first_stage_encoding(self.model.encode_first_stage(init_image))  # move to latent space
 
-        s = slerp(.5, init_latent_1, init_latent_2)
-        print(s)
-        [d] = self._samples_to_images(s)
-        file_writer = PngWriter("outputs")
-        file_writer.write_image(d, 42)
+            s = slerp(.5, init_latent_1, init_latent_2)
+            print(s)
+            [d] = self._samples_to_images(s)
+            file_writer = PngWriter("outputs")
+            file_writer.write_image(d, 42)
 
     @torch.no_grad()
     def _txt2img(self,
