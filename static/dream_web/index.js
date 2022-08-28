@@ -52,7 +52,12 @@ async function generateSubmit(form) {
     let formData = Object.fromEntries(new FormData(form));
     formData.initimg = formData.initimg.name !== '' ? await toBase64(formData.initimg) : null;
 
-    document.querySelector('progress').setAttribute('max', formData.steps);
+    let progressSectionEle = document.querySelector('#progress-section');
+    progressSectionEle.style.display = 'initial';
+    let progressEle = document.querySelector('#progress-bar');
+    progressEle.setAttribute('max', formData.steps);
+    let progressImageEle = document.querySelector('#progress-image');
+    progressImageEle.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>'; // blank svg
 
     // Post as JSON, using Fetch streaming to get results
     fetch(form.action, {
@@ -71,6 +76,7 @@ async function generateSubmit(form) {
                 const data = JSON.parse(event);
 
                 if (data.event == 'result') {
+                    progressSectionEle.style.display = 'none';
                     noOutputs = false;
                     document.querySelector("#no-results-message")?.remove();
 
@@ -78,7 +84,8 @@ async function generateSubmit(form) {
                         appendOutput(file, seed, data.config);
                     }
                 } else if (data.event == 'step') {
-                    document.querySelector('progress').setAttribute('value', data.step.toString());
+                    progressEle.setAttribute('value', data.step);
+                    progressImageEle.src = data.url;
                 }
             }
         }

@@ -53,7 +53,7 @@ class DreamServer(BaseHTTPRequestHandler):
         width = int(post_data['width'])
         height = int(post_data['height'])
         cfgscale = float(post_data['cfgscale'])
-        seed = None if int(post_data['seed']) == -1 else int(post_data['seed'])
+        seed = model.seed if int(post_data['seed']) == -1 else int(post_data['seed'])
 
         print(f"Request to generate with prompt: {prompt}")
 
@@ -62,9 +62,7 @@ class DreamServer(BaseHTTPRequestHandler):
             config['initimg'] = ''
 
             # Write PNGs
-            pngwriter = PngWriter(
-                "./outputs/img-samples/", config['prompt'], 1
-            )
+            pngwriter = PngWriter("./outputs/img-samples/", config['prompt'])
             # metadata_str = f'prompt2png({json.dumps(config)} seed={seed}' # gets written into the PNG
             pngwriter.write_image(image, seed)
 
@@ -77,9 +75,16 @@ class DreamServer(BaseHTTPRequestHandler):
                 {'event':'result', 'files':pngwriter.files_written, 'config':config}
             ) + '\n',"utf-8"))
 
-        def image_progress(image, step):
+        step_writer = PngWriter('./outputs/intermediates/', prompt, 2)
+        def image_progress(sample, step):
+            images = model._samples_to_images(sample)
+            image = images[0]
+            # TODO: refactor PngWriter:
+            # it doesn't need to know if batch_size > 1, just if this is _part of a batch_
+            step_writer.write_image(image, seed) # TODO PngWriter to return path
+
             self.wfile.write(bytes(json.dumps(
-                {'event':'step', 'step':step}
+                {'event':'step', 'step':step, 'url': step_writer.filepath}
             ) + '\n',"utf-8"))
 
         # outputs = []
