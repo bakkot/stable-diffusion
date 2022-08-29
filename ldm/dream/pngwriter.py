@@ -71,10 +71,13 @@ class PngWriter:
                 series += 1
                 filename = f'{basecount:06}.{seed}.png'
                 path = os.path.join(self.outdir, filename)
+                print(f'{series=}, exists: {os.path.exists(path)}, batch_size: {self.batch_size}')
                 if self.batch_size > 1 or os.path.exists(path):
                     if upscaled:
                         break
                     filename = f'{basecount:06}.{seed}.{series:02}.png'
+                print(f'{series=}, exists: {os.path.exists(path)}, batch_size: {self.batch_size}')
+                path = os.path.join(self.outdir, filename)
                 finished = not os.path.exists(path)
             return os.path.join(self.outdir, filename)
 
