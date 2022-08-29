@@ -39,6 +39,7 @@ class PngWriter:
 
     def unique_filename(self, seed, upscaled=False, previouspath=None):
         revision = 1
+        print(f'{previouspath=}')
 
         if previouspath is None:
             # sort reverse alphabetically until we find max+1
@@ -59,6 +60,7 @@ class PngWriter:
         else:
             basename = os.path.basename(previouspath)
             x = re.match('^(\d+)\..*\.png', basename)
+            print(f'{x=}')
             if not x:
                 return self.unique_filename(seed, upscaled, previouspath)
 
