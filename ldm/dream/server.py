@@ -110,7 +110,7 @@ class DreamServer(BaseHTTPRequestHandler):
             url = None
             # since rendering images is moderately expensive, only render every 5th image
             # and don't bother with the last one, since it'll render anyway
-            if progress_images and step % 5 == 0 and step < steps - 1:
+            if progress_images and (step % 5 == 0) and (step < steps - 1):
                 images = self.model._samples_to_images(sample)
                 image = images[0]
                 step_writer.write_image(image, seed) # TODO PngWriter to return path
