@@ -113,8 +113,9 @@ class DreamServer(BaseHTTPRequestHandler):
             if progress_images and (step % 5 == 0) and (step < steps - 1):
                 images = self.model._samples_to_images(sample)
                 image = images[0]
-                step_writer.write_image(image, seed) # TODO PngWriter to return path
+                step_writer.write_image(image, seed, upscaled=False) # TODO PngWriter to return path
                 url = step_writer.filepath
+                print(f'url: {url}')
             self.wfile.write(bytes(json.dumps(
                 {'event':'step', 'step':step, 'url': url}
             ) + '\n',"utf-8"))
