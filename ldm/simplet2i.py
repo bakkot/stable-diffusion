@@ -291,6 +291,9 @@ class T2I:
         results = list()
 
         weighted_prompts = T2I._split_weighted_subprompts(prompt)
+        if not skip_normalize:
+            totalWeight = sum((pw[1] for pw in weighted_prompts))
+            weighted_prompts = [(pw[0], pw[1] / totalWeight) for pw in weighted_prompts]
 
         try:
             if init_img:
@@ -302,7 +305,6 @@ class T2I:
                     steps=steps,
                     cfg_scale=cfg_scale,
                     ddim_eta=ddim_eta,
-                    skip_normalize=skip_normalize,
                     init_img=init_img,
                     strength=strength,
                     callback=step_callback,
@@ -315,7 +317,6 @@ class T2I:
                     steps=steps,
                     cfg_scale=cfg_scale,
                     ddim_eta=ddim_eta,
-                    skip_normalize=skip_normalize,
                     width=width,
                     height=height,
                     callback=step_callback,
@@ -402,7 +403,6 @@ class T2I:
         steps,
         cfg_scale,
         ddim_eta,
-        skip_normalize,
         width,
         height,
         callback,
@@ -414,7 +414,7 @@ class T2I:
         sampler = self.sampler
 
         def make_images():
-            uc, c = self._get_uc_and_c(weighted_prompts, batch_size, skip_normalize)
+            uc, c = self._get_uc_and_c(weighted_prompts, batch_size)
             shape = [
                 self.latent_channels,
                 height // self.downsampling_factor,
@@ -443,7 +443,6 @@ class T2I:
         steps,
         cfg_scale,
         ddim_eta,
-        skip_normalize,
         init_img,
         strength,
         callback, # Currently not implemented for img2img
@@ -476,7 +475,7 @@ class T2I:
         # print(f"target t_enc is {t_enc} steps")
 
         def make_images():
-            uc, c = self._get_uc_and_c(weighted_prompts, batch_size, skip_normalize)
+            uc, c = self._get_uc_and_c(weighted_prompts, batch_size)
 
             # encode (scaled latent)
             z_enc = sampler.stochastic_encode(
@@ -493,19 +492,15 @@ class T2I:
             return self._samples_to_images(samples)
         return make_images
 
-    def _get_uc_and_c(self, weighted_prompts, batch_size, skip_normalize):
+    def _get_uc_and_c(self, weighted_prompts, batch_size):
 
         uc = self.model.get_learned_conditioning(batch_size * [''])
 
         if len(weighted_prompts) > 1:
             # i dont know if this is correct.. but it works
             c = torch.zeros_like(uc)
-            # get total weight for normalizing
-            totalWeight = sum((pw[1] for pw in weighted_prompts))
             # normalize each "sub prompt" and add it
             for prompt, weight in weighted_prompts:
-                if not skip_normalize:
-                    weight = weight / totalWeight
                 self._log_tokenization(prompt)
                 c = torch.add(
                     c,
