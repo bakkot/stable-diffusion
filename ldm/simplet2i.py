@@ -290,11 +290,13 @@ class T2I:
         torch.cuda.torch.cuda.reset_peak_memory_stats()
         results = list()
 
+        weighted_prompts = T2I._split_weighted_subprompts(prompt)
+
         try:
             if init_img:
                 assert os.path.exists(init_img), f'{init_img}: File not found'
                 make_images = self._img2img(
-                    prompt,
+                    weighted_prompts,
                     precision_scope=scope,
                     batch_size=batch_size,
                     steps=steps,
@@ -307,7 +309,7 @@ class T2I:
                 )
             else:
                 make_images = self._txt2img(
-                    prompt,
+                    weighted_prompts,
                     precision_scope=scope,
                     batch_size=batch_size,
                     steps=steps,
@@ -394,7 +396,7 @@ class T2I:
     @torch.no_grad()
     def _txt2img(
         self,
-        prompt,
+        weighted_prompts,
         precision_scope,
         batch_size,
         steps,
@@ -412,7 +414,7 @@ class T2I:
         sampler = self.sampler
 
         def make_images():
-            uc, c = self._get_uc_and_c(prompt, batch_size, skip_normalize)
+            uc, c = self._get_uc_and_c(weighted_prompts, batch_size, skip_normalize)
             shape = [
                 self.latent_channels,
                 height // self.downsampling_factor,
@@ -435,7 +437,7 @@ class T2I:
     @torch.no_grad()
     def _img2img(
         self,
-        prompt,
+        weighted_prompts,
         precision_scope,
         batch_size,
         steps,
@@ -474,7 +476,7 @@ class T2I:
         # print(f"target t_enc is {t_enc} steps")
 
         def make_images():
-            uc, c = self._get_uc_and_c(prompt, batch_size, skip_normalize)
+            uc, c = self._get_uc_and_c(weighted_prompts, batch_size, skip_normalize)
 
             # encode (scaled latent)
             z_enc = sampler.stochastic_encode(
@@ -491,13 +493,10 @@ class T2I:
             return self._samples_to_images(samples)
         return make_images
 
-    # TODO: does this actually need to run every loop? does anything in it vary by random seed?
-    def _get_uc_and_c(self, prompt, batch_size, skip_normalize):
+    def _get_uc_and_c(self, weighted_prompts, batch_size, skip_normalize):
 
         uc = self.model.get_learned_conditioning(batch_size * [''])
 
-        # weighted sub-prompts
-        weighted_prompts = T2I._split_weighted_subprompts(prompt)
         if len(weighted_prompts) > 1:
             # i dont know if this is correct.. but it works
             c = torch.zeros_like(uc)
@@ -516,8 +515,8 @@ class T2I:
                     alpha=weight,
                 )
         else:   # just standard 1 prompt
-            self._log_tokenization(prompt)
-            c = self.model.get_learned_conditioning(batch_size * [prompt])
+            self._log_tokenization(weighted_prompts[0][0])
+            c = self.model.get_learned_conditioning(batch_size * [weighted_prompts[0][0]])
         return (uc, c)
 
     def _samples_to_images(self, samples):
