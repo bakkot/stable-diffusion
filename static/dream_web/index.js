@@ -81,12 +81,12 @@ async function generateSubmit(form) {
                 if (data.event == 'result') {
                     noOutputs = false;
                     document.querySelector("#no-results-message")?.remove();
-		    appendOutput(data.files[0],data.files[1],data.config)
-		} else if (data.event == 'upscaling-started') {
-		    document.getElementById("processing_cnt").textContent=data.processed_file_cnt;
-		    document.getElementById("scaling-inprocess-message").style.display = "block";
-		} else if (data.event == 'upscaling-done') {
-		    document.getElementById("scaling-inprocess-message").style.display = "none";
+                    appendOutput(data.url, data.seed, data.config);
+                } else if (data.event == 'upscaling-started') {
+                    document.getElementById("processing_cnt").textContent = data.processed_file_cnt;
+                    document.getElementById("scaling-inprocess-message").style.display = "block";
+                } else if (data.event == 'upscaling-done') {
+                    document.getElementById("scaling-inprocess-message").style.display = "none";
                 } else if (data.event == 'step') {
                     document.querySelector('progress').setAttribute('value', data.step.toString());
                 }

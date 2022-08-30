@@ -79,27 +79,30 @@ class DreamServer(BaseHTTPRequestHandler):
             "./outputs/img-samples/", config['prompt'], 1
         )
 
+        image_paths = dict()
+
         # if upscaling is requested, then this will be called twice, once when
         # the images are first generated, and then again when after upscaling
-        # is complete. The upscaling replaces the original file, so the second
-        # entry should not be inserted into the image list.
-        def image_done(image, seed, upscaled=False):
-            pngwriter.write_image(image, seed, upscaled)
+        # is complete.
+        def image_done(image, seed, was_upscale=False):
+            # server always overwrites the file on disk when upscaling
+            # TODO: it's not actually going to render upscaled images on the client...
+            path = pngwriter.write_image(image, seed, path=image_paths.get(seed))
+            image_paths[seed] = path
 
             # Append post_data to log, but only once!
-            if not upscaled:
-                current_image = pngwriter.files_written[-1]
+            if not was_upscale:
                 with open("./outputs/img-samples/dream_web_log.txt", "a") as log:
-                    log.write(f"{current_image[0]}: {json.dumps(config)}\n")
+                    log.write(f"{path}: {json.dumps(config)}\n")
                 self.wfile.write(bytes(json.dumps(
-                    {'event':'result', 'files':current_image, 'config':config}
+                    {'event': 'result', 'url': path, 'seed': seed, 'config': config}
                 ) + '\n',"utf-8"))
 
             # control state of the "postprocessing..." message
             upscaling_requested = upscale or gfpgan_strength>0
             nonlocal images_generated # NB: Is this bad python style? It is typical usage in a perl closure.
             nonlocal images_upscaled  # NB: Is this bad python style? It is typical usage in a perl closure.
-            if upscaled:
+            if was_upscale:
                 images_upscaled += 1
             else:
                 images_generated +=1

@@ -22,24 +22,22 @@ class PngWriter:
         self.batch_size = batch_size
         self.prompt = prompt
         self.filepath = None
-        self.files_written = []
+        self.files_written = dict()
         os.makedirs(outdir, exist_ok=True)
 
-    def write_image(self, image, seed, upscaled=False):
-        self.filepath = self.unique_filename(
-            seed, upscaled, self.filepath
-        )   # will increment name in some sensible way
+    def write_image(self, image, seed, path=None):
+        self.filepath = path if path is not None else self.unique_filename(
+            seed, self.filepath
+        ) # will increment name in some sensible way
         try:
             prompt = f'{self.prompt} -S{seed}'
             self.save_image_and_prompt_to_png(image, prompt, self.filepath)
         except IOError as e:
             print(e)
-        if not upscaled:
-            self.files_written.append([self.filepath, seed])
+        self.files_written[self.filepath] = seed
+        return self.filepath
 
-    def unique_filename(self, seed, upscaled=False, previouspath=None):
-        revision = 1
-
+    def unique_filename(self, seed, previouspath=None):
         if previouspath is None:
             # sort reverse alphabetically until we find max+1
             dirlist = sorted(os.listdir(self.outdir), reverse=True)
@@ -60,7 +58,7 @@ class PngWriter:
             basename = os.path.basename(previouspath)
             x = re.match('^(\d+)\..*\.png', basename)
             if not x:
-                return self.unique_filename(seed, upscaled, previouspath)
+                return self.unique_filename(seed, previouspath)
 
             basecount = int(x.groups()[0])
             series = 0
@@ -70,8 +68,6 @@ class PngWriter:
                 filename = f'{basecount:06}.{seed}.png'
                 path = os.path.join(self.outdir, filename)
                 if self.batch_size > 1 or os.path.exists(path):
-                    if upscaled:
-                        break
                     filename = f'{basecount:06}.{seed}.{series:02}.png'
                 finished = not os.path.exists(path)
             return os.path.join(self.outdir, filename)

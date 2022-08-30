@@ -176,11 +176,20 @@ def main_loop(t2i, outdir, parser, infile):
         # Here is where the images are actually generated!
         try:
             file_writer = PngWriter(current_outdir, normalized_prompt, opt.batch_size)
-            callback    = file_writer.write_image if individual_images else None
-            image_list  = t2i.prompt2image(image_callback=callback, **vars(opt))
-            results = (
-                file_writer.files_written if individual_images else image_list
-            )
+            results = []
+            paths = dict()
+            def write_image(image, seed, was_upscale=False):
+                if do_grid:
+                    results.append((image, seed))
+                else:
+                    if was_upscale and not opt.save_original:
+                        # was_upscale is called with False before True
+                        # so we will have a path to use at this point
+                        file_writer.write_image(image, seed, path=paths[seed])
+                    else:
+                        paths[seed] = file_writer.write_image(image, seed)
+
+            t2i.prompt2image(image_callback=write_image, **vars(opt))
 
             if do_grid and len(results) > 0:
                 grid_img = file_writer.make_grid([r[0] for r in results])

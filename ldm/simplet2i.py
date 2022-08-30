@@ -178,7 +178,7 @@ class T2I:
         )
         for r in results:
             pngwriter.write_image(r[0], r[1])
-        return pngwriter.files_written
+        return list(pngwriter.files_written.items())
 
     def txt2img(self, prompt, **kwargs):
         outdir = kwargs.pop('outdir', 'outputs/img-samples')
@@ -211,7 +211,6 @@ class T2I:
         init_img=None,
         strength=None,
         gfpgan_strength=0,
-        save_original=False,
         upscale=None,
         variants=None,
         sampler_name=None,
@@ -356,10 +355,7 @@ class T2I:
                                 f'Error running RealESRGAN - Your image was not upscaled.\n{e}'
                             )
                         if image_callback is not None:
-                            if save_original:
-                                image_callback(image, seed)
-                            else:
-                                image_callback(image, seed, upscaled=True)
+                            image_callback(image, seed, was_upscale=True)
                         else: # no callback passed, so we simply replace old image with rescaled one
                             result[0] = image
 
