@@ -28,6 +28,7 @@ from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 from ldm.models.diffusion.ksampler import KSampler
 from ldm.dream.pngwriter import PngWriter
+from ldm.parameters import DreamParameters
 
 """Simplified text to image API for stable diffusion/latent diffusion
 
@@ -299,11 +300,9 @@ class T2I:
             if init_img:
                 assert os.path.exists(init_img), f'{init_img}: File not found'
                 make_images = self._img2img(
-                    weighted_prompts,
                     precision_scope=scope,
                     batch_size=batch_size,
                     steps=steps,
-                    cfg_scale=cfg_scale,
                     ddim_eta=ddim_eta,
                     init_img=init_img,
                     strength=strength,
@@ -311,21 +310,23 @@ class T2I:
                 )
             else:
                 make_images = self._txt2img(
-                    weighted_prompts,
-                    precision_scope=scope,
                     batch_size=batch_size,
-                    steps=steps,
-                    cfg_scale=cfg_scale,
                     ddim_eta=ddim_eta,
-                    width=width,
-                    height=height,
                     callback=step_callback,
                 )
 
             with scope(self.device.type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
-                    seed_everything(seed)
-                    iter_images = make_images()
+                    params = DreamParameters(
+                        sampler_name=self.sampler_name,
+                        width=width,
+                        height=height,
+                        cfg_scale=cfg_scale,
+                        steps=steps,
+                        seed=seed,
+                        weighted_prompts=weighted_prompts,
+                    )
+                    iter_images = make_images(params)
                     for image in iter_images:
                         results.append([image, seed])
                         if image_callback is not None:
@@ -397,14 +398,8 @@ class T2I:
     @torch.no_grad()
     def _txt2img(
         self,
-        weighted_prompts,
-        precision_scope,
         batch_size,
-        steps,
-        cfg_scale,
         ddim_eta,
-        width,
-        height,
         callback,
     ):
         """
@@ -413,20 +408,22 @@ class T2I:
 
         sampler = self.sampler
 
-        def make_images():
-            uc, c = self._get_uc_and_c(weighted_prompts, batch_size)
+        def make_images(params: DreamParameters):
+            assert params.sampler_name == self.sampler_name, 'txt2img must use a consistent sampler'
+            seed_everything(params.seed)
+            uc, c = self._get_uc_and_c(params.weighted_prompts, batch_size)
             shape = [
                 self.latent_channels,
-                height // self.downsampling_factor,
-                width // self.downsampling_factor,
+                params.height // self.downsampling_factor,
+                params.width // self.downsampling_factor,
             ]
             samples, _ = sampler.sample(
-                S=steps,
+                S=params.steps,
                 conditioning=c,
                 batch_size=batch_size,
                 shape=shape,
                 verbose=False,
-                unconditional_guidance_scale=cfg_scale,
+                unconditional_guidance_scale=params.cfg_scale,
                 unconditional_conditioning=uc,
                 eta=ddim_eta,
                 img_callback=callback
@@ -437,11 +434,9 @@ class T2I:
     @torch.no_grad()
     def _img2img(
         self,
-        weighted_prompts,
         precision_scope,
         batch_size,
         steps,
-        cfg_scale,
         ddim_eta,
         init_img,
         strength,
@@ -470,12 +465,15 @@ class T2I:
         sampler.make_schedule(
             ddim_num_steps=steps, ddim_eta=ddim_eta, verbose=False
         )
-
         t_enc = int(strength * steps)
+
         # print(f"target t_enc is {t_enc} steps")
 
-        def make_images():
-            uc, c = self._get_uc_and_c(weighted_prompts, batch_size)
+        def make_images(params: DreamParameters):
+            assert params.sampler_name == 'ddim', 'img2img must use ddim for now'
+            assert params.steps == steps, 'img2img must use a consistent step count'
+            seed_everything(params.seed)
+            uc, c = self._get_uc_and_c(params.weighted_prompts, batch_size)
 
             # encode (scaled latent)
             z_enc = sampler.stochastic_encode(
@@ -486,7 +484,7 @@ class T2I:
                 z_enc,
                 c,
                 t_enc,
-                unconditional_guidance_scale=cfg_scale,
+                unconditional_guidance_scale=params.cfg_scale,
                 unconditional_conditioning=uc,
             )
             return self._samples_to_images(samples)
