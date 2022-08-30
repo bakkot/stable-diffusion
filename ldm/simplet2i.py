@@ -1,4 +1,5 @@
 # Copyright (c) 2022 Lincoln D. Stein (https://github.com/lstein)
+from typing import List, Tuple
 
 # Derived from source code carrying the following copyrights
 # Copyright (c) 2022 Machine Vision and Learning Group, LMU Munich
@@ -496,22 +497,21 @@ class T2I:
         uc = self.model.get_learned_conditioning(batch_size * [''])
 
         # weighted sub-prompts
-        subprompts, weights = T2I._split_weighted_subprompts(prompt)
-        if len(subprompts) > 1:
+        weighted_prompts = T2I._split_weighted_subprompts(prompt)
+        if len(weighted_prompts) > 1:
             # i dont know if this is correct.. but it works
             c = torch.zeros_like(uc)
             # get total weight for normalizing
-            totalWeight = sum(weights)
+            totalWeight = sum((pw[1] for pw in weighted_prompts))
             # normalize each "sub prompt" and add it
-            for i in range(0, len(subprompts)):
-                weight = weights[i]
+            for prompt, weight in weighted_prompts:
                 if not skip_normalize:
                     weight = weight / totalWeight
-                self._log_tokenization(subprompts[i])
+                self._log_tokenization(prompt)
                 c = torch.add(
                     c,
                     self.model.get_learned_conditioning(
-                        batch_size * [subprompts[i]]
+                        batch_size * [prompt]
                     ),
                     alpha=weight,
                 )
@@ -634,7 +634,7 @@ class T2I:
         image = torch.from_numpy(image)
         return 2.0 * image - 1.0
 
-    def _split_weighted_subprompts(text):
+    def _split_weighted_subprompts(text) -> List[Tuple[str, float]]:
         """
         grabs all text up to the first occurrence of ':'
         uses the grabbed text as a sub-prompt, and takes the value following ':' as weight
@@ -642,8 +642,7 @@ class T2I:
         repeats until no text remaining
         """
         remaining = len(text)
-        prompts = []
-        weights = []
+        weighted_prompts = []
         while remaining > 0:
             if ':' in text:
                 idx = text.index(':')   # first occurrence from start
@@ -671,15 +670,13 @@ class T2I:
                 remaining -= idx
                 text = text[idx + 1 :]
                 # append the sub-prompt and its weight
-                prompts.append(prompt)
-                weights.append(weight)
+                weighted_prompts.append((prompt, weight))
             else:   # no : found
                 if len(text) > 0:   # there is still text though
                     # take remainder as weight 1
-                    prompts.append(text)
-                    weights.append(1.0)
+                    weighted_prompts.append((text, 1.0))
                 remaining = 0
-        return prompts, weights
+        return weighted_prompts
         
     # shows how the prompt is tokenized 
     # usually tokens have '</w>' to indicate end-of-word, 
