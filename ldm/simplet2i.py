@@ -338,10 +338,10 @@ class T2I:
                     noise = torch.stack(noises)
                     print(f'{seeds=}')
                     iter_images = make_images(noise)
-                    for image in iter_images:
-                        results.append([image, seed])
+                    for iter_seed, image in zip(seeds, iter_images):
+                        results.append([image, iter_seed])
                         if image_callback is not None:
-                            image_callback(image, seed)
+                            image_callback(image, iter_seed)
                     seed = self._new_seed()
 
                 if upscale is not None or gfpgan_strength > 0:
