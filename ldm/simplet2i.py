@@ -294,7 +294,7 @@ class T2I:
         try:
             if init_img:
                 assert os.path.exists(init_img), f'{init_img}: File not found'
-                images_iterator = self._img2img(
+                make_images = self._img2img(
                     prompt,
                     precision_scope=scope,
                     batch_size=batch_size,
@@ -309,7 +309,7 @@ class T2I:
                     callback=step_callback,
                 )
             else:
-                images_iterator = self._txt2img(
+                make_images = self._txt2img(
                     prompt,
                     precision_scope=scope,
                     batch_size=batch_size,
@@ -324,8 +324,20 @@ class T2I:
 
             with scope(self.device.type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
-                    seed_everything(seed)
-                    iter_images = next(images_iterator)
+                    noises = []
+                    seeds = []
+                    for i in range(batch_size):
+                        seed_everything(seed)
+                        seeds.append(seed)
+                        noise.append(torch.randn([
+                                 self.latent_channels,
+                                 height // self.downsampling_factor,
+                                 width // self.downsampling_factor],
+                                 device=self.device))
+                        seed = self._new_seed()
+                    noise = torch.stack(noises)
+                    print(f'{seeds=}')
+                    iter_images = make_images(noise)
                     for image in iter_images:
                         results.append([image, seed])
                         if image_callback is not None:
@@ -414,7 +426,7 @@ class T2I:
 
         sampler = self.sampler
 
-        while True:
+        def make_images(noise):
             uc, c = self._get_uc_and_c(prompt, batch_size, skip_normalize)
             shape = [
                 self.latent_channels,
@@ -425,14 +437,16 @@ class T2I:
                 S=steps,
                 conditioning=c,
                 batch_size=batch_size,
+                x_T=noise,
                 shape=shape,
                 verbose=False,
                 unconditional_guidance_scale=cfg_scale,
                 unconditional_conditioning=uc,
                 eta=ddim_eta,
-                img_callback=callback
+                img_callback=callback,
             )
-            yield self._samples_to_images(samples)
+            return self._samples_to_images(samples)
+        return make_images
 
     @torch.no_grad()
     def _img2img(
@@ -477,7 +491,7 @@ class T2I:
         t_enc = int(strength * steps)
         # print(f"target t_enc is {t_enc} steps")
 
-        while True:
+        def make_images(noise):
             uc, c = self._get_uc_and_c(prompt, batch_size, skip_normalize)
 
             # encode (scaled latent)
@@ -493,7 +507,8 @@ class T2I:
                 unconditional_guidance_scale=cfg_scale,
                 unconditional_conditioning=uc,
             )
-            yield self._samples_to_images(samples)
+            return self._samples_to_images(samples)
+        return make_images
 
     # TODO: does this actually need to run every loop? does anything in it vary by random seed?
     def _get_uc_and_c(self, prompt, batch_size, skip_normalize):
