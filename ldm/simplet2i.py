@@ -334,7 +334,8 @@ class T2I:
                                  height // self.downsampling_factor,
                                  width // self.downsampling_factor],
                                  device=self.device))
-                        seed = self._new_seed()
+                        # if i < batch_size - 1:
+                        #     seed = self._new_seed()
                     noise = torch.stack(noises)
                     print(f'{seeds=}')
                     iter_images = make_images(noise)

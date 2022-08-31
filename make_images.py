@@ -14,5 +14,5 @@ for sampler in SAMPLER_CHOICES:
         sampler_name=sampler,
         seed=99999,
         steps=15,
-        batch_size=2
+        batch_size=1
     )
