@@ -2,7 +2,6 @@ import transformers
 
 from ldm.dream.pngwriter import PngWriter
 from ldm.simplet2i import T2I
-from scripts.dream import SAMPLER_CHOICES
 
 t2i = T2I()
 transformers.logging.set_verbosity_error()
