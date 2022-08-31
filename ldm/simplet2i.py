@@ -329,7 +329,7 @@ class T2I:
                     for i in range(batch_size):
                         seed_everything(seed)
                         seeds.append(seed)
-                        noise.append(torch.randn([
+                        noises.append(torch.randn([
                                  self.latent_channels,
                                  height // self.downsampling_factor,
                                  width // self.downsampling_factor],
