@@ -26,5 +26,6 @@ def image_progress(sample, step):
 t2i.prompt2png(
     prompt=prompt,
     outdir="outputs/results",
-    steps=15
+    steps=15,
+    step_callback=image_progress
 )
