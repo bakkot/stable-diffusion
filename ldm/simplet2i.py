@@ -638,8 +638,13 @@ class T2I:
         #        if "global_step" in pl_sd:
         #            print(f"Global Step: {pl_sd['global_step']}")
         sd = pl_sd['state_dict']
+        print(list(pl_sd.keys()))
         model = instantiate_from_config(config.model)
         m, u = model.load_state_dict(sd, strict=False)
+        print(f'id {id(model)}')
+        print(f'hash {hash(model)}')
+        print(f'hash-str {hash(str((model)))}')
+        print(f'str {str(model)}')
         model.to(self.device)
         model.eval()
         if self.full_precision:
