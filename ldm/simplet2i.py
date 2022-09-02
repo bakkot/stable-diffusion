@@ -642,7 +642,7 @@ class T2I:
         model = instantiate_from_config(config.model)
         m, u = model.load_state_dict(sd, strict=False)
         print(f'id {id(sd)}')
-        print(f'hash {hash(sd)}')
+        print(f'hash {sd.keys()}')
         print(f'hash-str {hash(str(sd))}')
         print(f'id pl {id(pl_sd)}')
         print(f'hash pl {hash(pl_sd)}')
