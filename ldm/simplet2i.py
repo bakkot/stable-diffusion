@@ -645,7 +645,7 @@ class T2I:
         print(f'hash {sd.keys()}')
         print(f'hash-str {hash(str(sd))}')
         print(f'id pl {id(pl_sd)}')
-        print(f'hash pl {hash(pl_sd)}')
+        # print(f'hash pl {hash(pl_sd)}')
         print(f'hash-str pl {hash(str(pl_sd))}')
         print(f'str {str(sd)}')
         print(f'str pl {str(pl_sd)}')
