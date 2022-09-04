@@ -22,6 +22,7 @@ import transformers
 import time
 import re
 import sys
+import gc
 
 from ldm.util                      import instantiate_from_config
 from ldm.models.diffusion.ddim     import DDIMSampler
@@ -432,7 +433,14 @@ class T2I:
                 eta=ddim_eta,
                 img_callback=callback
             )
-            return self._sample_to_image(samples)
+            collected = gc.collect()
+            print(f'{collected=}')
+            print(f'{collected=}')
+            result = self._sample_to_image(samples)
+            print(f'{collected=}')
+            print(f'{collected=}')
+            gc.collect()
+            return result
         return make_images
 
     @torch.no_grad()
