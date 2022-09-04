@@ -312,7 +312,6 @@ class T2I:
             else:
                 images_iterator = self._txt2img(
                     prompt,
-                    precision_scope=scope,
                     steps=steps,
                     cfg_scale=cfg_scale,
                     ddim_eta=ddim_eta,
@@ -401,7 +400,6 @@ class T2I:
     def _txt2img(
         self,
         prompt,
-        precision_scope,
         steps,
         cfg_scale,
         ddim_eta,
@@ -414,10 +412,10 @@ class T2I:
         An infinite iterator of images from the prompt.
         """
 
-        sampler = self.sampler
-        gc.collect()
 
         def make_images():
+            sampler = self.sampler
+            gc.collect()
             uc, c = self._get_uc_and_c(prompt, skip_normalize)
             shape = [
                 self.latent_channels,
