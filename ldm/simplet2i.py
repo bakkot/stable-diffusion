@@ -380,6 +380,7 @@ class T2I:
                     x_T = None
                     collected = gc.collect()
                     print(f'{collected=}')
+                    print(f'{collected=}')
                     if variation_amount > 0:
                         seed_everything(seed)
                         target_noise = self._get_noise(init_latent,width,height)
