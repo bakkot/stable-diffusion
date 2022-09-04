@@ -287,14 +287,14 @@ class T2I:
                 0.0 <= variation_amount <= 1.0
         ), '-v --variation_amount must be in [0.0, 1.0]'
 
-        if len(with_variations) > 0:
-            assert seed is not None,\
-                'seed must be specified when using with_variations'
-            if variation_amount == 0.0:
-                assert iterations == 1,\
-                    'when using --with_variations, multiple iterations are only possible when using --variation_amount'
-            assert all(0 <= weight <= 1 for _, weight in with_variations),\
-                f'variation weights must be in [0.0, 1.0]: got {[weight for _, weight in with_variations]}'
+        # if len(with_variations) > 0:
+        #     assert seed is not None,\
+        #         'seed must be specified when using with_variations'
+        #     if variation_amount == 0.0:
+        #         assert iterations == 1,\
+        #             'when using --with_variations, multiple iterations are only possible when using --variation_amount'
+        #     assert all(0 <= weight <= 1 for _, weight in with_variations),\
+        #         f'variation weights must be in [0.0, 1.0]: got {[weight for _, weight in with_variations]}'
 
         width, height, _ = self._resolution_check(width, height, log=True)
         scope = autocast if self.precision == 'autocast' else nullcontext
@@ -312,7 +312,7 @@ class T2I:
             if init_img:
                 assert os.path.exists(init_img), f'{init_img}: File not found'
                 init_image = self._load_img(init_img, width, height, fit).to(self.device)
-                with scope(device.type):
+                with scope(self.device.type):
                     init_latent = self.model.get_first_stage_encoding(
                         self.model.encode_first_stage(init_image)
                     ) # move to latent space
@@ -350,34 +350,35 @@ class T2I:
                         device=self.device)
 
             initial_noise = None
-            if variation_amount > 0 or len(with_variations) > 0:
-                # use fixed initial noise plus random noise per iteration
-                seed_everything(seed)
-                initial_noise = get_noise()
-                for v_seed, v_weight in with_variations:
-                    seed = v_seed
-                    seed_everything(seed)
-                    next_noise = get_noise()
-                    initial_noise = self.slerp(v_weight, initial_noise, next_noise)
-                if variation_amount > 0:
-                    random.seed() # reset RNG to an actually random state, so we can get a random seed for variations
-                    seed = random.randrange(0,np.iinfo(np.uint32).max)
+            # if variation_amount > 0 or len(with_variations) > 0:
+            #     # use fixed initial noise plus random noise per iteration
+            #     seed_everything(seed)
+            #     initial_noise = get_noise()
+            #     for v_seed, v_weight in with_variations:
+            #         seed = v_seed
+            #         seed_everything(seed)
+            #         next_noise = get_noise()
+            #         initial_noise = self.slerp(v_weight, initial_noise, next_noise)
+            #     if variation_amount > 0:
+            #         random.seed() # reset RNG to an actually random state, so we can get a random seed for variations
+            #         seed = random.randrange(0,np.iinfo(np.uint32).max)
 
             device_type = choose_autocast_device(self.device)
             with scope(device_type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
-                    x_T = None
-                    if variation_amount > 0:
-                        seed_everything(seed)
-                        target_noise = get_noise()
-                        x_T = self.slerp(variation_amount, initial_noise, target_noise)
-                    elif initial_noise is not None:
-                        # i.e. we specified particular variations
-                        x_T = initial_noise
-                    else:
-                        seed_everything(seed)
-                        # make_image will do the equivalent of get_noise itself
-                    image = make_image(x_T)
+                    # x_T = None
+                    # if variation_amount > 0:
+                    #     seed_everything(seed)
+                    #     target_noise = get_noise()
+                    #     x_T = self.slerp(variation_amount, initial_noise, target_noise)
+                    # elif initial_noise is not None:
+                    #     # i.e. we specified particular variations
+                    #     x_T = initial_noise
+                    # else:
+                    #     seed_everything(seed)
+                    #     # make_image will do the equivalent of get_noise itself
+                    seed_everything(seed)
+                    image = make_image(None)
                     results.append([image, seed])
                     if image_callback is not None:
                         image_callback(image, seed)

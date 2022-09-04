@@ -586,20 +586,20 @@ def create_cmd_parser():
         action='store_true',
         help='shows how the prompt is split into tokens'
     )
-    parser.add_argument(
-        '-v',
-        '--variation_amount',
-        default=0.0,
-        type=float,
-        help='If > 0, generates variations on the initial seed instead of random seeds per iteration. Must be between 0 and 1. Higher values will be more different.'
-    )
-    parser.add_argument(
-        '-V',
-        '--with_variations',
-        default=None,
-        type=str,
-        help='list of variations to apply, in the format `seed,weight;seed,weight;...'
-    )
+    # parser.add_argument(
+    #     '-v',
+    #     '--variation_amount',
+    #     default=0.0,
+    #     type=float,
+    #     help='If > 0, generates variations on the initial seed instead of random seeds per iteration. Must be between 0 and 1. Higher values will be more different.'
+    # )
+    # parser.add_argument(
+    #     '-V',
+    #     '--with_variations',
+    #     default=None,
+    #     type=str,
+    #     help='list of variations to apply, in the format `seed,weight;seed,weight;...'
+    # )
     return parser
 
 
