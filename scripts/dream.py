@@ -183,30 +183,30 @@ def main_loop(t2i, outdir, prompt_as_dir, parser, infile):
 
         do_grid           = opt.grid or t2i.grid
 
-        if opt.with_variations is not None:
-            # shotgun parsing, woo
-            parts = []
-            broken = False # python doesn't have labeled loops...
-            for part in opt.with_variations.split(';'):
-                seed_and_weight = part.split(',')
-                if len(seed_and_weight) != 2:
-                    print(f'could not parse with_variation part "{part}"')
-                    broken = True
-                    break
-                try:
-                    seed = int(seed_and_weight[0])
-                    weight = float(seed_and_weight[1])
-                except ValueError:
-                    print(f'could not parse with_variation part "{part}"')
-                    broken = True
-                    break
-                parts.append([seed, weight])
-            if broken:
-                continue
-            if len(parts) > 0:
-                opt.with_variations = parts
-            else:
-                opt.with_variations = None
+        # if opt.with_variations is not None:
+        #     # shotgun parsing, woo
+        #     parts = []
+        #     broken = False # python doesn't have labeled loops...
+        #     for part in opt.with_variations.split(';'):
+        #         seed_and_weight = part.split(',')
+        #         if len(seed_and_weight) != 2:
+        #             print(f'could not parse with_variation part "{part}"')
+        #             broken = True
+        #             break
+        #         try:
+        #             seed = int(seed_and_weight[0])
+        #             weight = float(seed_and_weight[1])
+        #         except ValueError:
+        #             print(f'could not parse with_variation part "{part}"')
+        #             broken = True
+        #             break
+        #         parts.append([seed, weight])
+        #     if broken:
+        #         continue
+        #     if len(parts) > 0:
+        #         opt.with_variations = parts
+        #     else:
+        #         opt.with_variations = None
 
         if opt.outdir:
             if not os.path.exists(opt.outdir):
@@ -244,22 +244,22 @@ def main_loop(t2i, outdir, prompt_as_dir, parser, infile):
                         filename = f'{prefix}.{seed}.postprocessed.png'
                     else:
                         filename = f'{prefix}.{seed}.png'
-                    if opt.variation_amount > 0:
-                        iter_opt = argparse.Namespace(**vars(opt)) # copy
-                        this_variation = [[seed, opt.variation_amount]]
-                        if opt.with_variations is None:
-                            iter_opt.with_variations = this_variation
-                        else:
-                            iter_opt.with_variations = opt.with_variations + this_variation
-                        iter_opt.variation_amount = 0
-                        normalized_prompt = PromptFormatter(t2i, iter_opt).normalize_prompt()
-                        metadata_prompt = f'{normalized_prompt} -S{iter_opt.seed}'
-                    elif opt.with_variations is not None:
-                        normalized_prompt = PromptFormatter(t2i, opt).normalize_prompt()
-                        metadata_prompt = f'{normalized_prompt} -S{opt.seed}' # use the original seed - the per-iteration value is the last variation-seed
-                    else:
-                        normalized_prompt = PromptFormatter(t2i, opt).normalize_prompt()
-                        metadata_prompt = f'{normalized_prompt} -S{seed}'
+                    # if opt.variation_amount > 0:
+                    #     iter_opt = argparse.Namespace(**vars(opt)) # copy
+                    #     this_variation = [[seed, opt.variation_amount]]
+                    #     if opt.with_variations is None:
+                    #         iter_opt.with_variations = this_variation
+                    #     else:
+                    #         iter_opt.with_variations = opt.with_variations + this_variation
+                    #     iter_opt.variation_amount = 0
+                    #     normalized_prompt = PromptFormatter(t2i, iter_opt).normalize_prompt()
+                    #     metadata_prompt = f'{normalized_prompt} -S{iter_opt.seed}'
+                    # elif opt.with_variations is not None:
+                    #     normalized_prompt = PromptFormatter(t2i, opt).normalize_prompt()
+                    #     metadata_prompt = f'{normalized_prompt} -S{opt.seed}' # use the original seed - the per-iteration value is the last variation-seed
+                    # else:
+                    normalized_prompt = PromptFormatter(t2i, opt).normalize_prompt()
+                    metadata_prompt = f'{normalized_prompt} -S{seed}'
                     path = file_writer.save_image_and_prompt_to_png(image, metadata_prompt, filename)
                     if (not upscaled) or opt.save_original:
                         # only append to results if we didn't overwrite an earlier output
