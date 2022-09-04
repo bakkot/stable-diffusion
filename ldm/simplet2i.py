@@ -334,6 +334,7 @@ class T2I:
                     init_latent = self.model.get_first_stage_encoding(
                         self.model.encode_first_stage(init_image)
                     ) # move to latent space
+                del init_image # help out python's GC
 
                 make_image = self._img2img(
                     prompt,
