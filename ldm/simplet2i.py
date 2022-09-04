@@ -326,6 +326,7 @@ class T2I:
             with scope(device_type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
                     seed_everything(seed)
+                    gc.collect()
                     image = images_iterator()
                     results.append([image, seed])
                     if image_callback is not None:
@@ -414,6 +415,7 @@ class T2I:
         """
 
         sampler = self.sampler
+        gc.collect()
 
         def make_images():
             uc, c = self._get_uc_and_c(prompt, skip_normalize)
