@@ -23,6 +23,7 @@ import transformers
 import time
 import re
 import sys
+import gc
 
 from ldm.util                      import instantiate_from_config
 from ldm.models.diffusion.ddim     import DDIMSampler
@@ -377,6 +378,8 @@ class T2I:
             with scope(device_type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
                     x_T = None
+                    collected = gc.collect()
+                    print(f'{collected=}')
                     if variation_amount > 0:
                         seed_everything(seed)
                         target_noise = self._get_noise(init_latent,width,height)
@@ -426,6 +429,7 @@ class T2I:
                             image_callback(image, seed, upscaled=True)
                         else:  # no callback passed, so we simply replace old image with rescaled one
                             result[0] = image
+
 
         except KeyboardInterrupt:
             print('*interrupted*')
