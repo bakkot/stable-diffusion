@@ -412,7 +412,7 @@ class T2I:
         An infinite iterator of images from the prompt.
         """
 
-
+        @torch.no_grad()
         def make_images():
             sampler = self.sampler
             gc.collect()
@@ -437,9 +437,9 @@ class T2I:
             print(f'{collected=}')
             print(f'{collected=}')
             result = self._sample_to_image(samples)
+            collected = gc.collect()
             print(f'{collected=}')
             print(f'{collected=}')
-            gc.collect()
             return result
         return make_images
 
