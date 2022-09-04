@@ -325,7 +325,7 @@ class T2I:
             with scope(device_type), self.model.ema_scope():
                 for n in trange(iterations, desc='Generating'):
                     seed_everything(seed)
-                    image = next(images_iterator)
+                    image = images_iterator()
                     results.append([image, seed])
                     if image_callback is not None:
                         image_callback(image, seed)
@@ -414,7 +414,7 @@ class T2I:
 
         sampler = self.sampler
 
-        while True:
+        def make_images():
             uc, c = self._get_uc_and_c(prompt, skip_normalize)
             shape = [
                 self.latent_channels,
@@ -432,7 +432,8 @@ class T2I:
                 eta=ddim_eta,
                 img_callback=callback
             )
-            yield self._sample_to_image(samples)
+            return self._sample_to_image(samples)
+        return make_images
 
     @torch.no_grad()
     def _img2img(
@@ -475,7 +476,7 @@ class T2I:
 
         t_enc = int(strength * steps)
 
-        while True:
+        def make_images():
             uc, c = self._get_uc_and_c(prompt, skip_normalize)
 
             # encode (scaled latent)
@@ -491,7 +492,8 @@ class T2I:
                 unconditional_guidance_scale=cfg_scale,
                 unconditional_conditioning=uc,
             )
-            yield self._sample_to_image(samples)
+            return self._sample_to_image(samples)
+        return make_images
 
     # TODO: does this actually need to run every loop? does anything in it vary by random seed?
     def _get_uc_and_c(self, prompt, skip_normalize):
